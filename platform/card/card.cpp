@@ -50,9 +50,15 @@ std::string card_dir()
 #ifdef _WIN32
 	else if (const char* x = getenv("APPDATA"))
 		g_dir = std::string(x) + "/sms-port/card-a";
-#endif
+#elif defined(__ANDROID__)
 	else
-		g_dir = std::string(getenv("HOME") ? getenv("HOME") : ".") + "/.local/share/sms-port/card-a";
+		g_dir = "/sdcard/Android/data/com.jbcgames.sunshine/files/card-a";
+#else
+	else if (const char* h = getenv("HOME"))
+		g_dir = std::string(h) + "/.local/share/sms-port/card-a";
+	else
+		g_dir = "./.local/share/sms-port/card-a";
+#endif
 	mkdirs(g_dir);
 	port_log("[card] slot A: %s\n", g_dir.c_str());
 	return g_dir;

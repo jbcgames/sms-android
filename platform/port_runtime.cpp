@@ -18,6 +18,41 @@
 #endif
 #ifdef __ANDROID__
 #include <android/log.h>
+#include <dlfcn.h>
+#include <unwind.h>
+struct AndroidBacktraceState {
+	void** current;
+	void** end;
+};
+static _Unwind_Reason_Code android_unwind_cb(struct _Unwind_Context* context, void* arg) {
+	AndroidBacktraceState* state = static_cast<AndroidBacktraceState*>(arg);
+	uintptr_t pc = _Unwind_GetIP(context);
+	if (pc) {
+		if (state->current == state->end) return _URC_END_OF_STACK;
+		*state->current++ = reinterpret_cast<void*>(pc);
+	}
+	return _URC_NO_REASON;
+}
+static void dump_android_backtrace() {
+	const size_t max = 30;
+	void* buffer[max];
+	AndroidBacktraceState state = {buffer, buffer + max};
+	_Unwind_Backtrace(android_unwind_cb, &state);
+	size_t count = state.current - buffer;
+	for (size_t i = 0; i < count; ++i) {
+		const void* addr = buffer[i];
+		Dl_info info;
+		if (dladdr(addr, &info) && info.dli_fname) {
+			port_log("[port]   #%02zu pc 0x%lx  %s (%s+0x%lx)\n", i,
+				(unsigned long)((uintptr_t)addr - (uintptr_t)info.dli_fbase),
+				info.dli_fname,
+				info.dli_sname ? info.dli_sname : "?",
+				(unsigned long)((uintptr_t)addr - (uintptr_t)info.dli_saddr));
+		} else {
+			port_log("[port]   #%02zu pc %p\n", i, addr);
+		}
+	}
+}
 #endif
 #include "port_host.h"
 #include "disc/gcdisc.h"
@@ -205,7 +240,9 @@ static void crash_handler(int sig, siginfo_t* si, void* uc)
 		}
 	}
 #endif
-#if !defined(__ANDROID__) && !defined(_WIN32)
+#if defined(__ANDROID__)
+	dump_android_backtrace();
+#elif !defined(_WIN32)
 	void* bt[64];
 	int n = backtrace(bt, 64);
 	backtrace_symbols_fd(bt, n, 2);
@@ -231,6 +268,10 @@ u8* port_mem1_base;
 u32 port_mem1_size;
 
 #ifndef _WIN32
+#ifndef MAP_FIXED_NOREPLACE
+#define MAP_FIXED_NOREPLACE 0x100000
+#endif
+
 // mmap exactly at `want` without replacing an existing mapping. Linux has
 // MAP_FIXED_NOREPLACE; Darwin's MAP_FIXED silently replaces whatever is there
 // (dylibs, graphics driver memory: the low 4 GiB is shared with the system
@@ -238,15 +279,18 @@ u32 port_mem1_size;
 // placement.
 static void* map_exact(void* want, size_t size)
 {
-#ifdef MAP_FIXED_NOREPLACE
 	void* p = mmap(want, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
-#else
-	void* p = mmap(want, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#endif
 	if (p == want)
 		return p;
-	if (p != MAP_FAILED)
+	if (p != MAP_FAILED) {
 		munmap(p, size);
+	} else if (errno == EINVAL) {
+		p = mmap(want, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		if (p == want)
+			return p;
+		if (p != MAP_FAILED)
+			munmap(p, size);
+	}
 	return MAP_FAILED;
 }
 #endif
@@ -374,23 +418,26 @@ void* port_low_alloc(unsigned long size)
 		return p;
 #endif
 	static uintptr_t next = 0x40000000u;
-	for (int tries = 0; tries < 4096 && next + size <= 0x80000000u; tries++) {
+	for (int tries = 0; tries < 256 && next + size <= 0x80000000u; tries++) {
 		void* want = (void*)next;
 		next += (size + 0xFFFFu) & ~(uintptr_t)0xFFFFu;
 		void* q = map_exact(want, size);
 		if (q == want)
 			return q;
 	}
-	for (uintptr_t at = 0x10000000u; at + size <= 0x40000000u; at += 0x10000u) {
+	for (uintptr_t at = 0x10000000u; at + size <= 0x80000000u; at += 0x100000u) {
 		void* q = map_exact((void*)at, size);
 		if (q == (void*)at)
 			return q;
 	}
-	for (uintptr_t at = 0x80000000u; at + size <= 0xE0000000u; at += 0x10000u) {
+	for (uintptr_t at = 0x80000000u; at + size <= 0xE0000000u; at += 0x100000u) {
 		void* q = map_exact((void*)at, size);
 		if (q == (void*)at)
 			return q;
 	}
+	void* fallback = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (fallback != MAP_FAILED)
+		return fallback;
 	return NULL;
 #endif
 }
@@ -581,6 +628,11 @@ static const char* settings_path()
 {
 	if (const char* p = getenv("SMS_SETTINGS"))
 		return p;
+#ifdef __ANDROID__
+	static std::string s_android_settings = "/sdcard/Android/data/com.jbcgames.sunshine/files/settings.txt";
+	if (access(s_android_settings.c_str(), R_OK) == 0)
+		return s_android_settings.c_str();
+#endif
 	for (const char* p : { "settings.txt", "../../settings.txt" })
 		if (access(p, R_OK) == 0)
 			return p;

@@ -1,6 +1,8 @@
 package com.jbcgames.sunshine;
 
 import android.app.ActionBar;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -61,6 +63,20 @@ public class SunshineActivity extends SDLActivity {
     }
 
     private String findDefaultDiscPath() {
+        File extFiles = getExternalFilesDir(null);
+        if (extFiles != null) {
+            File f = new File(extFiles, "GMSE01.iso");
+            if (f.exists() && f.canRead() && f.length() > 10 * 1024 * 1024) return f.getAbsolutePath();
+            f = new File(extFiles, "disc.iso");
+            if (f.exists() && f.canRead() && f.length() > 10 * 1024 * 1024) return f.getAbsolutePath();
+        }
+
+        File intFiles = getFilesDir();
+        if (intFiles != null) {
+            File f = new File(intFiles, "GMSE01.iso");
+            if (f.exists() && f.canRead() && f.length() > 10 * 1024 * 1024) return f.getAbsolutePath();
+        }
+
         String[] candidates = new String[] {
             "/sdcard/Download/GMSE01.iso",
             "/sdcard/Download/Super Mario Sunshine (USA).iso",
@@ -79,20 +95,29 @@ public class SunshineActivity extends SDLActivity {
             }
         }
 
-        File extFiles = getExternalFilesDir(null);
-        if (extFiles != null) {
-            File f = new File(extFiles, "GMSE01.iso");
-            if (f.exists() && f.canRead()) return f.getAbsolutePath();
-            f = new File(extFiles, "disc.iso");
-            if (f.exists() && f.canRead()) return f.getAbsolutePath();
-        }
-
         return null;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        String[] args = getArguments();
+        if (args.length == 0) {
+            mBrokenLibraries = true;
+            AlertDialog.Builder dlgAlert = new AlertDialog.Builder(this);
+            dlgAlert.setMessage("No se encontró la ISO del juego (GMSE01.iso).\n\nPor favor copia el archivo de la ISO del juego a la carpeta Descargas de tu dispositivo:\n/sdcard/Download/GMSE01.iso");
+            dlgAlert.setTitle("Juego no encontrado");
+            dlgAlert.setPositiveButton("Salir", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int id) {
+                    finish();
+                }
+            });
+            dlgAlert.setCancelable(false);
+            dlgAlert.create().show();
+            return;
+        }
 
         // Lock to landscape (adapts to both landscape angles)
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);

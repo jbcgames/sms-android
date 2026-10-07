@@ -41,15 +41,15 @@ struct TouchButton {
 // Button layout definitions
 TouchButton s_buttons[TBTN_COUNT] = {
     // ID          Label   RelX   RelY   RelR    PadMask             R    G    B
-    { TBTN_A,      "A",    0.88f, 0.76f, 0.088f, PAD_BUTTON_A,       46,  204, 113, false, -1 }, // Emerald Green
-    { TBTN_B,      "B",    0.78f, 0.83f, 0.076f, PAD_BUTTON_B,       231, 76,  60,  false, -1 }, // Coral Red
-    { TBTN_X,      "X",    0.80f, 0.65f, 0.065f, PAD_BUTTON_X,       241, 196, 15,  false, -1 }, // Amber Yellow
-    { TBTN_Y,      "Y",    0.71f, 0.72f, 0.065f, PAD_BUTTON_Y,       52,  152, 219, false, -1 }, // Sky Blue
+    { TBTN_A,      "A",    0.90f, 0.74f, 0.082f, PAD_BUTTON_A,       46,  204, 113, false, -1 }, // Emerald Green
+    { TBTN_B,      "B",    0.80f, 0.82f, 0.072f, PAD_BUTTON_B,       231, 76,  60,  false, -1 }, // Coral Red
+    { TBTN_X,      "X",    0.82f, 0.62f, 0.062f, PAD_BUTTON_X,       241, 196, 15,  false, -1 }, // Amber Yellow
+    { TBTN_Y,      "Y",    0.73f, 0.70f, 0.062f, PAD_BUTTON_Y,       52,  152, 219, false, -1 }, // Sky Blue
     { TBTN_L,      "L",    0.08f, 0.16f, 0.072f, PAD_TRIGGER_L,      149, 165, 166, false, -1 }, // Silver
-    { TBTN_R,      "R",    0.91f, 0.54f, 0.075f, 0,                  41,  128, 185, false, -1 }, // Ocean Blue (Soft Run Spray)
-    { TBTN_R_HARD, "R+",   0.81f, 0.44f, 0.066f, PAD_TRIGGER_R,      31,  78,  121, false, -1 }, // Deep Blue (Aim Spray)
-    { TBTN_Z,      "Z",    0.92f, 0.16f, 0.065f, PAD_TRIGGER_Z,      155, 89,  182, false, -1 }, // Purple
-    { TBTN_START,  "START",0.50f, 0.08f, 0.052f, PAD_BUTTON_START,  230, 126, 34,  false, -1 }, // Orange
+    { TBTN_R,      "R",    0.91f, 0.52f, 0.072f, 0,                  41,  128, 185, false, -1 }, // Ocean Blue (Soft Run Spray)
+    { TBTN_R_HARD, "R+",   0.82f, 0.44f, 0.062f, PAD_TRIGGER_R,      31,  78,  121, false, -1 }, // Deep Blue (Aim Spray)
+    { TBTN_Z,      "Z",    0.92f, 0.16f, 0.062f, PAD_TRIGGER_Z,      155, 89,  182, false, -1 }, // Purple
+    { TBTN_START,  "START",0.50f, 0.08f, 0.050f, PAD_BUTTON_START,  230, 126, 34,  false, -1 }, // Orange
     { TBTN_OPACITY,"HUD",  0.40f, 0.08f, 0.045f, 0,                  127, 140, 141, false, -1 }  // Settings/HUD
 };
 
@@ -64,6 +64,7 @@ struct VirtualStick {
 };
 
 VirtualStick s_stick = { false, -1, 0, 0, 0, 0, 0, 0, 0 };
+VirtualStick s_cstick = { false, -1, 0, 0, 0, 0, 0, 0, 0 };
 
 // Camera Touch Swipe State
 struct CameraSwipe {
@@ -91,6 +92,10 @@ Sprite s_buttonSprites[TBTN_COUNT][2]; // [id][0=normal, 1=pressed]
 Sprite s_stickBaseSprite;
 Sprite s_stickKnobSprite;
 Sprite s_stickKnobPressedSprite;
+
+Sprite s_cstickBaseSprite;
+Sprite s_cstickKnobSprite;
+Sprite s_cstickKnobPressedSprite;
 
 // Simple 5x7 bitmap font for rendering labels
 const uint8_t kFont5x7[128][5] = {
@@ -226,7 +231,7 @@ Sprite makeButtonSprite(int size, uint8_t r, uint8_t g, uint8_t b, const char* l
     return sp;
 }
 
-// Generate joystick base ring sprite
+// Generate main joystick base ring sprite
 Sprite makeStickBaseSprite(int size)
 {
     Sprite sp;
@@ -285,7 +290,7 @@ Sprite makeStickBaseSprite(int size)
     return sp;
 }
 
-// Generate joystick knob sprite
+// Generate main joystick knob sprite
 Sprite makeStickKnobSprite(int size, bool pressed)
 {
     Sprite sp;
@@ -332,6 +337,102 @@ Sprite makeStickKnobSprite(int size, bool pressed)
     return sp;
 }
 
+// Generate C-stick base ring sprite (yellow theme)
+Sprite makeCStickBaseSprite(int size)
+{
+    Sprite sp;
+    sp.w = size;
+    sp.h = size;
+    sp.pixels.resize(size * size * 4, 0);
+
+    float center = (size - 1) * 0.5f;
+    float outerR = size * 0.47f;
+    float innerR = outerR * 0.82f;
+
+    for (int y = 0; y < size; ++y) {
+        for (int x = 0; x < size; ++x) {
+            float dx = x - center;
+            float dy = y - center;
+            float dist = std::sqrt(dx * dx + dy * dy);
+            size_t idx = (size_t(y) * size + x) * 4;
+
+            if (dist <= outerR) {
+                float alpha = 0.0f;
+                uint8_t cr = 241, cg = 196, cb = 15;
+
+                if (dist >= innerR) {
+                    float edgeOut = std::max(0.0f, std::min(1.0f, outerR - dist));
+                    float edgeIn = std::max(0.0f, std::min(1.0f, dist - innerR));
+                    alpha = edgeOut * edgeIn * 200.0f;
+                } else {
+                    alpha = 45.0f * (1.0f - dist / innerR * 0.5f);
+                    cr = 140; cg = 120; cb = 30;
+                }
+
+                sp.pixels[idx + 0] = cr;
+                sp.pixels[idx + 1] = cg;
+                sp.pixels[idx + 2] = cb;
+                sp.pixels[idx + 3] = uint8_t(alpha);
+            }
+        }
+    }
+    return sp;
+}
+
+// Generate C-stick yellow knob sprite
+Sprite makeCStickKnobSprite(int size, bool pressed)
+{
+    Sprite sp;
+    sp.w = size;
+    sp.h = size;
+    sp.pixels.resize(size * size * 4, 0);
+
+    float center = (size - 1) * 0.5f;
+    float outerR = size * 0.46f;
+    float ringR = outerR * 0.60f;
+
+    for (int y = 0; y < size; ++y) {
+        for (int x = 0; x < size; ++x) {
+            float dx = x - center;
+            float dy = y - center;
+            float dist = std::sqrt(dx * dx + dy * dy);
+            size_t idx = (size_t(y) * size + x) * 4;
+
+            if (dist <= outerR) {
+                float edge = std::max(0.0f, std::min(1.0f, outerR - dist));
+                uint8_t cr = 241, cg = 196, cb = 15; // Iconic GameCube C-Stick yellow
+                uint8_t alpha = uint8_t(edge * (pressed ? 245 : 210));
+
+                if (pressed) {
+                    cr = 255; cg = 230; cb = 50; // Glowing yellow
+                } else {
+                    float grad = 1.0f - (dist / outerR) * 0.25f;
+                    cr = uint8_t(241 * grad);
+                    cg = uint8_t(196 * grad);
+                    cb = uint8_t(15 * grad);
+                }
+
+                if (std::abs(dist - ringR) < 1.5f) {
+                    cr = std::min(255, cr + 40);
+                    cg = std::min(255, cg + 40);
+                    cb = std::min(255, cb + 40);
+                }
+
+                sp.pixels[idx + 0] = cr;
+                sp.pixels[idx + 1] = cg;
+                sp.pixels[idx + 2] = cb;
+                sp.pixels[idx + 3] = alpha;
+            }
+        }
+    }
+
+    // Draw 'C' in the center of the knob
+    int fontScale = size >= 60 ? 2 : 1;
+    drawCharToBuffer(sp.pixels, size, size, (int)center, (int)center, 'C', fontScale, 40, 40, 40, 240);
+
+    return sp;
+}
+
 void rebuildSprites()
 {
     int baseStickSize = int(s_winH * 0.28f);
@@ -342,6 +443,15 @@ void rebuildSprites()
     int knobSize = int(baseStickSize * 0.44f);
     s_stickKnobSprite = makeStickKnobSprite(knobSize, false);
     s_stickKnobPressedSprite = makeStickKnobSprite(knobSize, true);
+
+    int cstickBaseSize = int(s_winH * 0.22f);
+    if (cstickBaseSize < 48) cstickBaseSize = 48;
+    if (cstickBaseSize > 200) cstickBaseSize = 200;
+    s_cstickBaseSprite = makeCStickBaseSprite(cstickBaseSize);
+
+    int cstickKnobSize = int(cstickBaseSize * 0.46f);
+    s_cstickKnobSprite = makeCStickKnobSprite(cstickKnobSize, false);
+    s_cstickKnobPressedSprite = makeCStickKnobSprite(cstickKnobSize, true);
 
     for (int i = 0; i < TBTN_COUNT; ++i) {
         int btnPx = int(s_buttons[i].relRadius * 2.0f * s_winH);
@@ -361,7 +471,7 @@ void touch_controller_init(void)
     if (s_inited) return;
     s_inited = true;
 
-    // Default positioning for stick
+    // Default positioning for main left stick
     s_stick.active = false;
     s_stick.fingerId = -1;
     s_stick.radius = s_winH * 0.14f;
@@ -371,6 +481,17 @@ void touch_controller_init(void)
     s_stick.currY = s_stick.anchorY;
     s_stick.stickX = 0;
     s_stick.stickY = 0;
+
+    // Default positioning for right C-stick
+    s_cstick.active = false;
+    s_cstick.fingerId = -1;
+    s_cstick.radius = s_winH * 0.11f;
+    s_cstick.anchorX = s_winW * 0.61f;
+    s_cstick.anchorY = s_winH * 0.76f;
+    s_cstick.currX = s_cstick.anchorX;
+    s_cstick.currY = s_cstick.anchorY;
+    s_cstick.stickX = 0;
+    s_cstick.stickY = 0;
 
     rebuildSprites();
 }
@@ -382,11 +503,18 @@ void touch_controller_resize(int winW, int winH)
 
     s_winW = winW;
     s_winH = winH;
+
     s_stick.radius = winH * 0.14f;
     s_stick.anchorX = winW * 0.16f;
     s_stick.anchorY = winH * 0.72f;
     s_stick.currX = s_stick.anchorX;
     s_stick.currY = s_stick.anchorY;
+
+    s_cstick.radius = winH * 0.11f;
+    s_cstick.anchorX = winW * 0.61f;
+    s_cstick.anchorY = winH * 0.76f;
+    s_cstick.currX = s_cstick.anchorX;
+    s_cstick.currY = s_cstick.anchorY;
 
     rebuildSprites();
     s_inited = true;
@@ -419,8 +547,8 @@ void touch_controller_on_finger_down(int64_t fingerId, float normX, float normY)
         }
     }
 
-    // Left half: Virtual Joystick
-    if (px < s_winW * 0.45f && py > s_winH * 0.28f) {
+    // Left side: Main Virtual Joystick
+    if (px < s_winW * 0.40f && py > s_winH * 0.28f) {
         if (!s_stick.active) {
             s_stick.active = true;
             s_stick.fingerId = fingerId;
@@ -434,7 +562,25 @@ void touch_controller_on_finger_down(int64_t fingerId, float normX, float normY)
         }
     }
 
-    // Right-middle area: Camera swipe look
+    // Right-center area: C-Stick touch zone
+    float cdx = px - s_cstick.anchorX;
+    float cdy = py - s_cstick.anchorY;
+    float cdist = std::sqrt(cdx * cdx + cdy * cdy);
+    if (cdist <= s_cstick.radius * 2.2f || (px >= s_winW * 0.50f && px <= s_winW * 0.71f && py > s_winH * 0.45f)) {
+        if (!s_cstick.active) {
+            s_cstick.active = true;
+            s_cstick.fingerId = fingerId;
+            s_cstick.anchorX = px;
+            s_cstick.anchorY = py;
+            s_cstick.currX = px;
+            s_cstick.currY = py;
+            s_cstick.stickX = 0;
+            s_cstick.stickY = 0;
+            return;
+        }
+    }
+
+    // Right-upper/middle area: Camera swipe look
     if (px >= s_winW * 0.45f && px <= s_winW * 0.78f) {
         if (!s_cam.active) {
             s_cam.active = true;
@@ -454,7 +600,7 @@ void touch_controller_on_finger_move(int64_t fingerId, float normX, float normY)
     float px = normX * s_winW;
     float py = normY * s_winH;
 
-    // Update joystick if finger matches
+    // Update main joystick if finger matches
     if (s_stick.active && s_stick.fingerId == fingerId) {
         s_stick.currX = px;
         s_stick.currY = py;
@@ -479,6 +625,35 @@ void touch_controller_on_finger_move(int64_t fingerId, float normX, float normY)
         } else {
             s_stick.stickX = (int)std::round((dx / maxR) * 100.0f);
             s_stick.stickY = (int)std::round((-dy / maxR) * 100.0f); // Invert Y: up is positive
+        }
+        return;
+    }
+
+    // Update C-stick if finger matches
+    if (s_cstick.active && s_cstick.fingerId == fingerId) {
+        s_cstick.currX = px;
+        s_cstick.currY = py;
+
+        float dx = px - s_cstick.anchorX;
+        float dy = py - s_cstick.anchorY;
+        float dist = std::sqrt(dx * dx + dy * dy);
+        float maxR = s_cstick.radius;
+
+        if (dist > maxR && dist > 0.001f) {
+            dx = (dx / dist) * maxR;
+            dy = (dy / dist) * maxR;
+            s_cstick.currX = s_cstick.anchorX + dx;
+            s_cstick.currY = s_cstick.anchorY + dy;
+            dist = maxR;
+        }
+
+        float normDist = dist / maxR;
+        if (normDist < 0.10f) {
+            s_cstick.stickX = 0;
+            s_cstick.stickY = 0;
+        } else {
+            s_cstick.stickX = (int)std::round((dx / maxR) * 100.0f);
+            s_cstick.stickY = (int)std::round((-dy / maxR) * 100.0f);
         }
         return;
     }
@@ -514,7 +689,7 @@ void touch_controller_on_finger_move(int64_t fingerId, float normX, float normY)
 
 void touch_controller_on_finger_up(int64_t fingerId, float /*normX*/, float /*normY*/)
 {
-    // Release joystick
+    // Release main joystick
     if (s_stick.active && s_stick.fingerId == fingerId) {
         s_stick.active = false;
         s_stick.fingerId = -1;
@@ -522,6 +697,16 @@ void touch_controller_on_finger_up(int64_t fingerId, float /*normX*/, float /*no
         s_stick.currY = s_stick.anchorY;
         s_stick.stickX = 0;
         s_stick.stickY = 0;
+    }
+
+    // Release C-stick
+    if (s_cstick.active && s_cstick.fingerId == fingerId) {
+        s_cstick.active = false;
+        s_cstick.fingerId = -1;
+        s_cstick.currX = s_cstick.anchorX;
+        s_cstick.currY = s_cstick.anchorY;
+        s_cstick.stickX = 0;
+        s_cstick.stickY = 0;
     }
 
     // Release camera swipe
@@ -573,14 +758,17 @@ void touch_controller_update_pad(PADStatus* status)
     if (s_buttons[TBTN_A].pressed) status->analogA = 255;
     if (s_buttons[TBTN_B].pressed) status->analogB = 255;
 
-    // Left analog stick
+    // Left main analog stick
     if (s_stick.active && (s_stick.stickX != 0 || s_stick.stickY != 0)) {
         status->stickX = (int8_t)s_stick.stickX;
         status->stickY = (int8_t)s_stick.stickY;
     }
 
-    // Camera swipe substick
-    if (s_cam.active) {
+    // Right C-stick (Camera analog stick)
+    if (s_cstick.active && (s_cstick.stickX != 0 || s_cstick.stickY != 0)) {
+        status->substickX = (int8_t)s_cstick.stickX;
+        status->substickY = (int8_t)s_cstick.stickY;
+    } else if (s_cam.active) {
         status->substickX = (int8_t)s_cam.substickX;
         status->substickY = (int8_t)s_cam.substickY;
         // Decay swipe delta
@@ -596,7 +784,7 @@ void touch_controller_draw(int winW, int winH)
         touch_controller_resize(winW, winH);
     }
 
-    // 1. Draw virtual joystick
+    // 1. Draw main virtual joystick (Left)
     float baseX = s_stick.active ? s_stick.anchorX : (s_winW * 0.16f);
     float baseY = s_stick.active ? s_stick.anchorY : (s_winH * 0.72f);
     int baseW = s_stickBaseSprite.w;
@@ -606,7 +794,7 @@ void touch_controller_draw(int winW, int winH)
 
     GXPC_DrawOverlay(s_stickBaseSprite.pixels.data(), baseW, baseH, drawBaseX, drawBaseY, 1, winW, winH);
 
-    // Knob
+    // Main Knob
     float knobX = s_stick.active ? s_stick.currX : baseX;
     float knobY = s_stick.active ? s_stick.currY : baseY;
     const Sprite& knobSp = s_stick.active ? s_stickKnobPressedSprite : s_stickKnobSprite;
@@ -615,7 +803,25 @@ void touch_controller_draw(int winW, int winH)
 
     GXPC_DrawOverlay(knobSp.pixels.data(), knobSp.w, knobSp.h, drawKnobX, drawKnobY, 1, winW, winH);
 
-    // 2. Draw all buttons
+    // 2. Draw C-stick (Right)
+    float cbaseX = s_cstick.active ? s_cstick.anchorX : (s_winW * 0.61f);
+    float cbaseY = s_cstick.active ? s_cstick.anchorY : (s_winH * 0.76f);
+    int cbaseW = s_cstickBaseSprite.w;
+    int cbaseH = s_cstickBaseSprite.h;
+    int drawCBaseX = int(cbaseX - cbaseW * 0.5f);
+    int drawCBaseY = int(cbaseY - cbaseH * 0.5f);
+
+    GXPC_DrawOverlay(s_cstickBaseSprite.pixels.data(), cbaseW, cbaseH, drawCBaseX, drawCBaseY, 1, winW, winH);
+
+    float cknobX = s_cstick.active ? s_cstick.currX : cbaseX;
+    float cknobY = s_cstick.active ? s_cstick.currY : cbaseY;
+    const Sprite& cknobSp = s_cstick.active ? s_cstickKnobPressedSprite : s_cstickKnobSprite;
+    int drawCKnobX = int(cknobX - cknobSp.w * 0.5f);
+    int drawCKnobY = int(cknobY - cknobSp.h * 0.5f);
+
+    GXPC_DrawOverlay(cknobSp.pixels.data(), cknobSp.w, cknobSp.h, drawCKnobX, drawCKnobY, 1, winW, winH);
+
+    // 3. Draw all buttons
     for (int i = 0; i < TBTN_COUNT; ++i) {
         const Sprite& sp = s_buttonSprites[i][s_buttons[i].pressed ? 1 : 0];
         if (sp.pixels.empty()) continue;

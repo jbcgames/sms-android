@@ -4,18 +4,16 @@
 
 <br>
 
-[![Latest release](https://img.shields.io/github/v/release/TekRantGaming/sms-pc-port?style=for-the-badge&label=release&color=ffc93c&labelColor=0b1e3a)](https://github.com/TekRantGaming/sms-pc-port/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/TekRantGaming/sms-pc-port/total?style=for-the-badge&color=1e88e5&labelColor=0b1e3a)](https://github.com/TekRantGaming/sms-pc-port/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/TekRantGaming/sms-pc-port/release.yml?branch=main&style=for-the-badge&labelColor=0b1e3a)](https://github.com/TekRantGaming/sms-pc-port/actions)
-![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-00acc1?style=for-the-badge&labelColor=0b1e3a)
+[![Latest release](https://img.shields.io/github/v/release/jbcgames/sms-android?style=for-the-badge&label=release&color=ffc93c&labelColor=0b1e3a)](https://github.com/jbcgames/sms-android/releases/latest)
+![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20Windows%20%7C%20Linux-00acc1?style=for-the-badge&labelColor=0b1e3a)
 
-### A native PC port of Super Mario Sunshine, with the launcher and options of a modern PC release.
+### A native Android & PC port of Super Mario Sunshine, with on-screen touch overlay and OpenGL ES 3.0.
 
-[<img src="https://img.shields.io/badge/Download-Windows%20x64-ffc93c?style=for-the-badge&logo=windows&logoColor=white&labelColor=0b1e3a" alt="Download for Windows" height="40">](https://github.com/TekRantGaming/sms-pc-port/releases/latest)
+[<img src="https://img.shields.io/badge/Download-Android%20APK-2e7d32?style=for-the-badge&logo=android&logoColor=white&labelColor=0b1e3a" alt="Download for Android" height="40">](https://github.com/jbcgames/sms-android/releases/latest)
 &nbsp;
-[<img src="https://img.shields.io/badge/Download-Linux%20AppImage-ffc93c?style=for-the-badge&logo=linux&logoColor=white&labelColor=0b1e3a" alt="Download for Linux" height="40">](https://github.com/TekRantGaming/sms-pc-port/releases/latest)
+[<img src="https://img.shields.io/badge/Guía%20de%20Instalación-Android-ff9800?style=for-the-badge&logo=markdown&logoColor=white&labelColor=0b1e3a" alt="Guía Android" height="40">](INSTALL_ANDROID.md)
 
-<sub>Built from the <a href="https://github.com/chasem-dev/sms-english">matching decompilation</a>. <b>No game data included</b>: bring your own disc image of Super Mario Sunshine (North America, GMSE01, revision 0).</sub>
+<sub>Built from the <a href="https://github.com/chasem-dev/sms-english">matching decompilation</a>. <b>No game data included</b>: bring your own disc image of Super Mario Sunshine (North America, GMSE01, revision 0). Consulta la [Guía de Instalación para Android](INSTALL_ANDROID.md).</sub>
 
 </div>
 
