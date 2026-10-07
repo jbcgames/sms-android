@@ -1,0 +1,27 @@
+# Super Mario Sunshine settings for RK3326 / Mali-G31
+launcher = 0
+window_mode = fullscreen
+render_scale = 0.5
+draw_distance = 0.7
+far_plane = 25000
+fast_peek = 1
+copy_writeback = 0
+disable_shimmer = 1
+disable_shadows = 1
+disable_reflections = 1
+disable_water_anim = 1
+npc_draw_distance = 2500
+actor_draw_distance = 3500
+mapobj_draw_distance = 4000
+static_draw_distance = 6000
+shader_cache = 1
+msaa = 0
+fxaa = 0
+anisotropic = 0
+frame_rate = 30
+vsync = 0
+aspect = keep
+disc_image = GMSE01.iso
+save_dir = save
+volume = 100
+texture_pack_mb = 700
