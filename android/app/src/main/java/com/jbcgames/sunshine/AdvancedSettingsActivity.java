@@ -2,6 +2,7 @@ package com.jbcgames.sunshine;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -24,6 +25,9 @@ public class AdvancedSettingsActivity extends Activity {
 
     private Spinner spRenderScale;
     private Spinner spFrameRate;
+    private Spinner spWidescreen;
+    private Spinner spWidescreenHud;
+    private Spinner spAspect;
     private Spinner spDrawDistance;
     private Spinner spMsaa;
     private Spinner spAniso;
@@ -45,6 +49,16 @@ public class AdvancedSettingsActivity extends Activity {
 
     private static final String[] RENDER_SCALES = {"0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x", "3.0x", "4.0x", "6.0x", "8.0x"};
     private static final String[] FRAME_RATES = {"30 FPS", "60 FPS"};
+    private static final String[] WIDESCREEN_OPTIONS = {
+        "Auto (Pantalla Nativa)", "16:9 (Panorámico Estándar)", "16:10 (Tablets / Laptops)",
+        "21:9 (Ultrawide)", "32:9 (Super Ultrawide)", "4:3 (Original GameCube)"
+    };
+    private static final String[] WIDESCREEN_HUD_OPTIONS = {
+        "Bordes de Pantalla (Edges)", "Centrado (Área 4:3)"
+    };
+    private static final String[] ASPECT_OPTIONS = {
+        "Mantener Proporción (Keep)", "Estirar Pantalla (Stretch)"
+    };
     private static final String[] DRAW_DISTANCES = {
         "0.5x (Bajo)", "0.7x (Medio)", "1.0x (Normal)", "1.5x (Alto)",
         "2.0x (Muy Alto)", "3.0x (Extremo)", "4.0x (Super)", "5.0x (Ultra 5x)"
@@ -61,6 +75,9 @@ public class AdvancedSettingsActivity extends Activity {
 
         spRenderScale = findViewById(R.id.spRenderScale);
         spFrameRate = findViewById(R.id.spFrameRate);
+        spWidescreen = findViewById(R.id.spWidescreen);
+        spWidescreenHud = findViewById(R.id.spWidescreenHud);
+        spAspect = findViewById(R.id.spAspect);
         spDrawDistance = findViewById(R.id.spDrawDistance);
         spMsaa = findViewById(R.id.spMsaa);
         spAniso = findViewById(R.id.spAniso);
@@ -102,6 +119,9 @@ public class AdvancedSettingsActivity extends Activity {
     private void setupSpinners() {
         spRenderScale.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, RENDER_SCALES));
         spFrameRate.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, FRAME_RATES));
+        spWidescreen.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, WIDESCREEN_OPTIONS));
+        spWidescreenHud.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, WIDESCREEN_HUD_OPTIONS));
+        spAspect.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, ASPECT_OPTIONS));
         spDrawDistance.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, DRAW_DISTANCES));
         spMsaa.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, MSAA_OPTIONS));
         spAniso.setAdapter(new ArrayAdapter<>(this, R.layout.spinner_item_white, ANISO_OPTIONS));
@@ -151,6 +171,21 @@ public class AdvancedSettingsActivity extends Activity {
         return new File(dir, "settings.txt");
     }
 
+    private static int gcd(int a, int b) {
+        return b == 0 ? a : gcd(b, a % b);
+    }
+
+    private String getAutoAspect() {
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        int w = Math.max(dm.widthPixels, dm.heightPixels);
+        int h = Math.min(dm.widthPixels, dm.heightPixels);
+        int g = gcd(w, h);
+        if (g > 0) {
+            return (w / g) + ":" + (h / g);
+        }
+        return "16:9";
+    }
+
     private void loadSettings() {
         File f = getSettingsFile();
         if (f.exists()) {
@@ -172,6 +207,31 @@ public class AdvancedSettingsActivity extends Activity {
         // Apply loaded settings to UI
         setSpinnerByValue(spRenderScale, mSettings.getOrDefault("render_scale", "0.5"), RENDER_SCALES);
         setSpinnerByValue(spFrameRate, mSettings.getOrDefault("frame_rate", "30") + " FPS", FRAME_RATES);
+
+        // Widescreen loading
+        String ws = mSettings.getOrDefault("widescreen", "auto");
+        if ("off".equalsIgnoreCase(ws) || "0".equals(ws)) {
+            spWidescreen.setSelection(5); // 4:3
+        } else if ("16:9".equalsIgnoreCase(ws) || "1".equals(ws) || "on".equalsIgnoreCase(ws)) {
+            spWidescreen.setSelection(1); // 16:9
+        } else if ("16:10".equalsIgnoreCase(ws)) {
+            spWidescreen.setSelection(2); // 16:10
+        } else if ("21:9".equalsIgnoreCase(ws)) {
+            spWidescreen.setSelection(3); // 21:9
+        } else if ("32:9".equalsIgnoreCase(ws)) {
+            spWidescreen.setSelection(4); // 32:9
+        } else {
+            spWidescreen.setSelection(0); // Auto
+        }
+
+        // Widescreen HUD
+        String wsHud = mSettings.getOrDefault("widescreen_hud", "edges");
+        spWidescreenHud.setSelection("centre".equalsIgnoreCase(wsHud) ? 1 : 0);
+
+        // Aspect
+        String aspect = mSettings.getOrDefault("aspect", "keep");
+        spAspect.setSelection("stretch".equalsIgnoreCase(aspect) ? 1 : 0);
+
         setSpinnerByValue(spDrawDistance, mSettings.getOrDefault("draw_distance", "0.7"), DRAW_DISTANCES);
         setSpinnerByValue(spMsaa, mSettings.getOrDefault("msaa", "0"), MSAA_OPTIONS);
         setSpinnerByValue(spAniso, mSettings.getOrDefault("anisotropic", "0"), ANISO_OPTIONS);
@@ -208,6 +268,9 @@ public class AdvancedSettingsActivity extends Activity {
     private void applyPresetLow() {
         setSpinnerByValue(spRenderScale, "0.5", RENDER_SCALES);
         setSpinnerByValue(spFrameRate, "30", FRAME_RATES);
+        spWidescreen.setSelection(1); // 16:9
+        spWidescreenHud.setSelection(1); // centre
+        spAspect.setSelection(0); // keep
         setSpinnerByValue(spDrawDistance, "0.7", DRAW_DISTANCES);
         setSpinnerByValue(spMsaa, "0", MSAA_OPTIONS);
         setSpinnerByValue(spAniso, "0", ANISO_OPTIONS);
@@ -222,6 +285,9 @@ public class AdvancedSettingsActivity extends Activity {
     private void applyPresetBalanced() {
         setSpinnerByValue(spRenderScale, "0.75", RENDER_SCALES);
         setSpinnerByValue(spFrameRate, "30", FRAME_RATES);
+        spWidescreen.setSelection(0); // Auto
+        spWidescreenHud.setSelection(0); // edges
+        spAspect.setSelection(0); // keep
         setSpinnerByValue(spDrawDistance, "1.0", DRAW_DISTANCES);
         setSpinnerByValue(spMsaa, "0", MSAA_OPTIONS);
         setSpinnerByValue(spAniso, "2", ANISO_OPTIONS);
@@ -236,6 +302,9 @@ public class AdvancedSettingsActivity extends Activity {
     private void applyPresetHigh() {
         setSpinnerByValue(spRenderScale, "1.0", RENDER_SCALES);
         setSpinnerByValue(spFrameRate, "60", FRAME_RATES);
+        spWidescreen.setSelection(0); // Auto
+        spWidescreenHud.setSelection(0); // edges
+        spAspect.setSelection(0); // keep
         setSpinnerByValue(spDrawDistance, "1.5", DRAW_DISTANCES);
         setSpinnerByValue(spMsaa, "2", MSAA_OPTIONS);
         setSpinnerByValue(spAniso, "4", ANISO_OPTIONS);
@@ -250,6 +319,9 @@ public class AdvancedSettingsActivity extends Activity {
     private void applyPresetUltra() {
         setSpinnerByValue(spRenderScale, "8.0", RENDER_SCALES);
         setSpinnerByValue(spFrameRate, "60", FRAME_RATES);
+        spWidescreen.setSelection(0); // Auto
+        spWidescreenHud.setSelection(0); // edges
+        spAspect.setSelection(0); // keep
         setSpinnerByValue(spDrawDistance, "5.0", DRAW_DISTANCES);
         setSpinnerByValue(spMsaa, "8", MSAA_OPTIONS);
         setSpinnerByValue(spAniso, "16", ANISO_OPTIONS);
@@ -264,6 +336,16 @@ public class AdvancedSettingsActivity extends Activity {
     private void saveSettings() {
         String renderScale = RENDER_SCALES[spRenderScale.getSelectedItemPosition()].replace("x", "");
         String frameRate = spFrameRate.getSelectedItemPosition() == 1 ? "60" : "30";
+
+        int wsIdx = spWidescreen.getSelectedItemPosition();
+        String widescreen = wsIdx == 0 ? getAutoAspect() :
+                            wsIdx == 1 ? "16:9" :
+                            wsIdx == 2 ? "16:10" :
+                            wsIdx == 3 ? "21:9" :
+                            wsIdx == 4 ? "32:9" : "off";
+
+        String widescreenHud = spWidescreenHud.getSelectedItemPosition() == 0 ? "edges" : "centre";
+        String aspect = spAspect.getSelectedItemPosition() == 0 ? "keep" : "stretch";
 
         int drawIdx = spDrawDistance.getSelectedItemPosition();
         String drawDist = drawIdx == 0 ? "0.5" : drawIdx == 1 ? "0.7" : drawIdx == 2 ? "1.0" :
@@ -283,6 +365,9 @@ public class AdvancedSettingsActivity extends Activity {
 
         mSettings.put("render_scale", renderScale);
         mSettings.put("frame_rate", frameRate);
+        mSettings.put("widescreen", widescreen);
+        mSettings.put("widescreen_hud", widescreenHud);
+        mSettings.put("aspect", aspect);
         mSettings.put("draw_distance", drawDist);
         mSettings.put("msaa", msaa);
         mSettings.put("anisotropic", aniso);
@@ -297,7 +382,6 @@ public class AdvancedSettingsActivity extends Activity {
         mSettings.put("copy_writeback", "0");
         mSettings.put("shader_cache", "1");
         mSettings.put("vsync", "0");
-        mSettings.put("aspect", "keep");
         mSettings.put("save_dir", saveDirFile.getAbsolutePath());
 
         File f = getSettingsFile();

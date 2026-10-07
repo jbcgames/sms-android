@@ -150,6 +150,70 @@
                 android:textSize="12sp"
                 android:visibility="gone" />
 
+            <!-- Widescreen & Aspect Ratio Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Formato de Pantalla &amp; Widescreen"
+                android:textColor="#80D8FF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <!-- Widescreen Mode -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Relación de Aspecto (Widescreen)"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spWidescreen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="#2A2A3C"
+                android:padding="8dp" />
+
+            <!-- HUD Position -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Posición de Interfaz / HUD en Widescreen"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spWidescreenHud"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="#2A2A3C"
+                android:padding="8dp" />
+
+            <!-- Aspect Scaling -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Escalado de Pantalla (Aspect)"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spAspect"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="#2A2A3C"
+                android:padding="8dp" />
+
             <!-- Draw Distance -->
             <TextView
                 android:layout_width="wrap_content"
